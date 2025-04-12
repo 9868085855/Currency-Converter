@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Currency Converter Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+    header, footer {
+      background-color: #333;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header a {
+      color: white;
+      margin-left: 15px;
+      text-decoration: none;
+    }
+    .logo {
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    .ads {
+      background-color: #ccc;
+      text-align: center;
+      padding: 20px;
+      margin: 10px;
+    }
+    .container {
+      max-width: 600px;
+      background: white;
+      margin: 20px auto;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .search-box {
+      margin-bottom: 10px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    select, input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+    }
+    .flags {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .flags img {
+      width: 24px;
+      height: 18px;
+      margin-right: 10px;
+    }
+    .result {
+      margin-top: 15px;
+      font-size: 1.2em;
+      font-weight: bold;
+      text-align: center;
+    }
+    .history {
+      margin-top: 20px;
+    }
+    .history h3 {
+      margin-bottom: 10px;
+    }
+    .history ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .history li {
+      padding: 5px 0;
+      border-bottom: 1px solid #ddd;
+    }
+    @media (max-width: 600px) {
+      header, footer {
+        flex-direction: column;
+        text-align: center;
+      }
+      .flags {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .flags img {
+        margin-bottom: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">CurrencyTool</div>
+    <div>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </header>
+
+  <div class="ads">Advertisement Space (Top)</div>
+
+  <div class="container">
+    <h2>Currency Converter</h2>
+
+    <div class="search-box">
+      <input type="text" id="from-search" placeholder="Search from country...">
+      <div class="flags">
+        <img id="from-flag" src="https://flagsapi.com/US/flat/64.png" alt="Flag">
+        <select id="from-currency"></select>
+      </div>
+
+      <input type="number" id="amount" placeholder="Enter amount" />
+
+      <input type="text" id="to-search" placeholder="Search to country...">
+      <div class="flags">
+        <img id="to-flag" src="https://flagsapi.com/IN/flat/64.png" alt="Flag">
+        <select id="to-currency"></select>
+      </div>
+    </div>
+
+    <button onclick="convertCurrency()">Convert Now</button>
+
+    <div class="result" id="result"></div>
+
+    <div class="history">
+      <h3>Conversion History</h3>
+      <ul id="history-list"></ul>
+    </div>
+  </div>
+
+  <div class="ads">Advertisement Space (Bottom)</div>
+
+  <footer>
+    <div>&copy; 2025 CurrencyTool. All rights reserved.</div>
+  </footer>
+
+  <script>
+    const fromSelect = document.getElementById('from-currency');
+    const toSelect = document.getElementById('to-currency');
+    const fromFlag = document.getElementById('from-flag');
+    const toFlag = document.getElementById('to-flag');
+    const historyList = document.getElementById('history-list');
+    const fromSearch = document.getElementById('from-search');
+    const toSearch = document.getElementById('to-search');
+
+    let currencyOptions = [];
+    const countryCodes = {};
+
+    async function fetchCountries() {
+      try {
+        const [exchangeRes, countriesRes] = await Promise.all([
+          fetch("https://open.er-api.com/v6/latest/USD"),
+          fetch("https://restcountries.com/v3.1/all")
+        ]);
+
+        const exchangeData = await exchangeRes.json();
+        const countriesData = await countriesRes.json();
+
+        const validCurrencyCodes = Object.keys(exchangeData.rates);
+
+        const fullList = [];
+
+        countriesData.forEach(country => {
+          const name = country.name.common;
+          const flagCode = country.cca2;
+          if (country.currencies) {
+            Object.entries(country.currencies).forEach(([code]) => {
+              if (validCurrencyCodes.includes(code)) {
+                fullList.push({ code, name, flagCode });
+              }
+            });
+          }
+        });
+
+        // Group by currency code, picking one country with most common use (e.g., USD = United States)
+        const currencyMap = {};
+        fullList.forEach(item => {
+          if (!currencyMap[item.code] || item.name === 'United States') {
+            currencyMap[item.code] = item;
+          }
+        });
+
+        currencyOptions = Object.values(currencyMap);
+        currencyOptions.sort((a, b) => a.name.localeCompare(b.name));
+
+        currencyOptions.forEach(({ code, flagCode }) => {
+          countryCodes[code] = flagCode;
+        });
+
+        populateDropdown(fromSelect, currencyOptions);
+        populateDropdown(toSelect, currencyOptions);
+
+        fromSelect.value = 'USD';
+        toSelect.value = 'INR';
+        updateFlags();
+      } catch (error) {
+        alert("Could not load currency list. Please refresh.");
+        console.error(error);
+      }
+    }
+
+    function populateDropdown(select, options) {
+      select.innerHTML = '';
+      options.forEach(({ code, name }) => {
+        const option = document.createElement("option");
+        option.value = code;
+        option.text = `${name} (${code})`;
+        select.appendChild(option);
+      });
+    }
+
+    function filterDropdown(searchInput, select, options) {
+      const value = searchInput.value.toLowerCase();
+      const filtered = options.filter(option => option.name.toLowerCase().includes(value));
+      populateDropdown(select, filtered);
+    }
+
+    fromSearch.addEventListener('input', () => filterDropdown(fromSearch, fromSelect, currencyOptions));
+    toSearch.addEventListener('input', () => filterDropdown(toSearch, toSelect, currencyOptions));
+
+    function updateFlags() {
+      const fromCode = countryCodes[fromSelect.value] || 'US';
+      const toCode = countryCodes[toSelect.value] || 'IN';
+      fromFlag.src = `https://flagsapi.com/${fromCode}/flat/64.png`;
+      toFlag.src = `https://flagsapi.com/${toCode}/flat/64.png`;
+    }
+
+    fromSelect.addEventListener('change', updateFlags);
+    toSelect.addEventListener('change', updateFlags);
+
+    async function convertCurrency() {
+      const amount = document.getElementById('amount').value;
+      const from = fromSelect.value;
+      const to = toSelect.value;
+
+      if (!amount || isNaN(amount)) {
+        alert("Please enter a valid amount.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`https://open.er-api.com/v6/latest/${from}`);
+        const data = await res.json();
+        const rate = data.rates[to];
+        const result = (amount * rate).toFixed(2);
+        document.getElementById('result').textContent = `${amount} ${from} = ${result} ${to}`;
+
+        const listItem = document.createElement('li');
+        listItem.textContent = `${amount} ${from} → ${result} ${to}`;
+        historyList.prepend(listItem);
+      } catch (error) {
+        alert("Error fetching exchange rates. Try again later.");
+        console.error(error);
+      }
+    }
+
+    fetchCountries();
+  </script>
+</body>
+</html>
