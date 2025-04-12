@@ -1,10 +1,14 @@
+<!-- Full index.html code (about + contact enabled) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Currency Converter Tool</title>
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -19,9 +23,12 @@
       justify-content: space-between;
       align-items: center;
     }
+    header .nav-links {
+      display: flex;
+      gap: 15px;
+    }
     header a {
       color: white;
-      margin-left: 15px;
       text-decoration: none;
     }
     .logo {
@@ -40,9 +47,7 @@
       margin: 20px auto;
       padding: 20px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .search-box {
-      margin-bottom: 10px;
+      scroll-margin-top: 80px;
     }
     .search-box input {
       width: 100%;
@@ -94,10 +99,17 @@
       padding: 5px 0;
       border-bottom: 1px solid #ddd;
     }
+    .section-highlight {
+      background-color: #ffffcc;
+      transition: background-color 1s ease-in-out;
+    }
     @media (max-width: 600px) {
       header, footer {
         flex-direction: column;
         text-align: center;
+      }
+      header .nav-links {
+        margin-top: 10px;
       }
       .flags {
         flex-direction: column;
@@ -112,7 +124,7 @@
 <body>
   <header>
     <div class="logo">CurrencyTool</div>
-    <div>
+    <div class="nav-links">
       <a href="#about">About</a>
       <a href="#contact">Contact</a>
     </div>
@@ -150,6 +162,18 @@
   </div>
 
   <div class="ads">Advertisement Space (Bottom)</div>
+
+  <!-- 👇 About Section -->
+  <section id="about" class="container">
+    <h2>About</h2>
+    <p>This currency converter tool helps you convert currencies from any country using real-time exchange rates. It is built to be responsive and user-friendly for both desktop and mobile users.</p>
+  </section>
+
+  <!-- 👇 Contact Section -->
+  <section id="contact" class="container">
+    <h2>Contact</h2>
+    <p>If you have any feedback, questions, or want to report an issue, please email us at <a href="mailto:support@currencytool.com">support@currencytool.com</a>.</p>
+  </section>
 
   <footer>
     <div>&copy; 2025 CurrencyTool. All rights reserved.</div>
@@ -193,7 +217,6 @@
           }
         });
 
-        // Group by currency code, picking one country with most common use (e.g., USD = United States)
         const currencyMap = {};
         fullList.forEach(item => {
           if (!currencyMap[item.code] || item.name === 'United States') {
@@ -274,6 +297,18 @@
         console.error(error);
       }
     }
+
+    // Highlight about/contact on navigation
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('href').substring(1);
+        const section = document.getElementById(targetId);
+        if (section) {
+          section.classList.add('section-highlight');
+          setTimeout(() => section.classList.remove('section-highlight'), 1000);
+        }
+      });
+    });
 
     fetchCountries();
   </script>
